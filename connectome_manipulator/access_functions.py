@@ -282,6 +282,8 @@ def get_connections(edges, pre_ids, post_ids, with_nsyn=False):
     conns = np.array(
         [([_c.id for _c in _conn[:2]] + list(_conn[2:])) for _conn in it_conns]
     )  # Resolve src/tgt IDs
+    if len(conns) == 0:  # Ensure consistent shape even when empty
+        return np.empty((0, 2 + int(with_nsyn)))
     return conns
 
 
