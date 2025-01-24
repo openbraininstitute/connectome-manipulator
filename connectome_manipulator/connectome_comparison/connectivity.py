@@ -26,6 +26,7 @@ from connectome_manipulator.access_functions import (
     get_connections,
 )
 
+
 def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_distance):
     """Computes a sparse bool matrix of neuron pairs within a specified maximum distance. The value of the matrix at i, j is True iff the pair of neuron i and neuron j are within that distance.
 
@@ -80,6 +81,8 @@ def compute(
         sel_dest (str/list-like/dict): Target (post-synaptic) neuron selection
         skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
         edges_popul_name (str): Name of SONATA egdes population to extract data from
+        max_distance (float): Optional. Maximum distance of pairs of neurons considered. If used, must also provide ``props_for_distance``.
+        props_for_distance (list): Optional. To be provided with ``max_distance``. Numerical node properties that are used to calculate the pairwise distances.
 
     Returns:
         dict: Dictionary containing the computed data elements; see Notes
