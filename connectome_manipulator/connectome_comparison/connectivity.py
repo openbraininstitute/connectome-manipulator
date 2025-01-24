@@ -47,7 +47,9 @@ def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_di
     locs_pre = nodes_pre.get(pre_ids, props_for_distance)
     locs_post = nodes_post.get(post_ids, props_for_distance)
 
-    lookup_pre = pd.Series(range(len(locs_pre)), index=locs_pre.index)  # from node id to 0, 1, 2, ...
+    lookup_pre = pd.Series(
+        range(len(locs_pre)), index=locs_pre.index
+    )  # from node id to 0, 1, 2, ...
     lookup_post = pd.Series(range(len(locs_post)), index=locs_post.index)
 
     tree_pre = KDTree(locs_pre)
@@ -56,8 +58,9 @@ def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_di
     pairs_within = tree_pre.query_ball_tree(tree_post, max_dist)
     indptr = np.cumsum([0] + list(map(len, pairs_within)))
     indices = np.hstack(pairs_within)
-    within_mat = sparse.csr_matrix((np.ones_like(indices, dtype=bool), indices, indptr),
-                                   shape=(len(locs_pre), len(locs_post)))
+    within_mat = sparse.csr_matrix(
+        (np.ones_like(indices, dtype=bool), indices, indptr), shape=(len(locs_pre), len(locs_post))
+    )
     return within_mat, lookup_pre, lookup_post
 
 
@@ -164,10 +167,15 @@ def compute(
 
             if conns.size > 0:
                 if max_distance is not None and len(pre_ids) > 0 and len(post_ids) > 0:
-                    assert props_for_distance is not None, "When specifying distance cutoff, must also specify properties to use!"
-                    M, lo_pre, lo_post = within_max_distance_matrix((src_nodes, pre_ids),
-                                                                    (tgt_nodes, post_ids),
-                                                                    max_distance, props_for_distance)
+                    assert (
+                        props_for_distance is not None
+                    ), "When specifying distance cutoff, must also specify properties to use!"
+                    M, lo_pre, lo_post = within_max_distance_matrix(
+                        (src_nodes, pre_ids),
+                        (tgt_nodes, post_ids),
+                        max_distance,
+                        props_for_distance,
+                    )
                     is_within = np.asarray(M[lo_pre[conns[:, 0]], lo_post[conns[:, 1]]]).flatten()
                     conns = conns[is_within]
                     npairs = M.nnz
