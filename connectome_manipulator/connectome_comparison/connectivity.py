@@ -100,6 +100,10 @@ def compute(
         * "nsyn_conn_max": Maximum number of synapses per connection
         * "conn_prob": Average connection probability
     """
+    if max_distance is not None:
+        assert (
+            props_for_distance is not None
+        ), "When specifying distance cutoff, must also specify properties to use!"
     # Select edge population
     edges = get_edges_population(circuit, edges_popul_name)
 
@@ -145,7 +149,7 @@ def compute(
         ]  # group_by will overwrite selection in case group property also exists in selection!
 
     print(
-        f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups)",
+        f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, max_distance={max_distance} based on {props_for_distance})",
         flush=True,
     )
 
@@ -167,9 +171,6 @@ def compute(
 
             if conns.size > 0:
                 if max_distance is not None and len(pre_ids) > 0 and len(post_ids) > 0:
-                    assert (
-                        props_for_distance is not None
-                    ), "When specifying distance cutoff, must also specify properties to use!"
                     M, lo_pre, lo_post = within_max_distance_matrix(
                         (src_nodes, pre_ids),
                         (tgt_nodes, post_ids),
