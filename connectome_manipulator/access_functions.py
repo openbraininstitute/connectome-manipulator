@@ -186,7 +186,7 @@ def get_node_ids(nodes, sel_spec, split_ids=None):
         if len(sel_ids.ranges) == 1:
             # First turn selection array into an index array then
             # because we filtered contiguous ids with a simple offset, just shift by the first node id
-            gids = np.nonzero(selection)[0] + sel_ids.ranges[0][0]
+            gids = np.atleast_1d(selection).nonzero()[0] + sel_ids.ranges[0][0]
         else:
             # for more complex cases, fully resolve the node-preselection
             gids = sel_ids.flatten().astype(np.int64)[selection]
