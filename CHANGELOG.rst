@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Version 1.0.3
+-------------
+
+- Added new feature (max. distance for connectivity extraction)
+- Small fixes
+
+
 Version 1.0.2
 -------------
 
