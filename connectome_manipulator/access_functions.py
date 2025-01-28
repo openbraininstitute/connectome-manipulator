@@ -1,8 +1,4 @@
 # This file is part of connectome-manipulator.
-#
-# SPDX-License-Identifier: Apache-2.0
-# Copyright (c) 2024 Blue Brain Project/EPFL
-# Copyright (c) 2025 Open Brain Institute
 
 """Collection of function for flexible nodes/edges access, to be used by model building and manipulation operations"""
 
