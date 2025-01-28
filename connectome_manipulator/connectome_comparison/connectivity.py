@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2024 Blue Brain Project/EPFL
+# Copyright (c) 2025 Open Brain Institute
 
 """Module for comparing connectomes based on connectivity features:
 
