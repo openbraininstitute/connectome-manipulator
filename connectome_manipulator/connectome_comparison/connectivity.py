@@ -15,11 +15,53 @@ between the two connectomes, are then plotted by means of the :func:`plot` funct
 import matplotlib.pyplot as plt
 import numpy as np
 import progressbar
+import pandas as pd
+
+from scipy.spatial import KDTree
+from scipy import sparse
+
 from connectome_manipulator.access_functions import (
     get_edges_population,
     get_node_ids,
     get_connections,
 )
+
+
+def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_distance):
+    """Computes a sparse bool matrix of neuron pairs within a specified maximum distance. The value of the matrix at i, j is True iff the pair of neuron i and neuron j are within that distance.
+
+    Args:
+        pre_neurons (tuple): A tuple of the node population object and the node ids for the first population of neurons. This population will be indexed along the first axis of the output
+        post_neurons (tuple): A tuple of the node population object and the node ids for the second population of neurons. This population will be indexed along the second axis of the output
+        max_dist (float): Maximum distance to use.
+        props_for_distance (list): List of node properties that must be available for both populations. Their values must be numeric. They will be used to calculate the (Euclidean) distance.
+    """
+    nodes_pre, pre_ids = pre_neurons
+    nodes_post, post_ids = post_neurons
+    assert np.all([_p in nodes_pre.property_dtypes for _p in props_for_distance])
+    assert np.all([_p in nodes_post.property_dtypes for _p in props_for_distance])
+    if len(pre_ids) == 0 or len(post_ids) == 0:
+        within_mat = sparse.csr_matrix((len(pre_ids), len(post_ids)), dtype=bool)
+        return within_mat, pd.Series([]), pd.Series([])
+
+    locs_pre = nodes_pre.get(pre_ids, props_for_distance)
+    locs_post = nodes_post.get(post_ids, props_for_distance)
+
+    lookup_pre = pd.Series(
+        range(len(locs_pre)), index=locs_pre.index
+    )  # from node id to 0, 1, 2, ...
+    lookup_post = pd.Series(range(len(locs_post)), index=locs_post.index)
+
+    tree_pre = KDTree(locs_pre)
+    tree_post = KDTree(locs_post)
+
+    pairs_within = tree_pre.query_ball_tree(tree_post, max_dist)
+    indptr = np.cumsum([0] + list(map(len, pairs_within)))
+    indices = np.hstack(pairs_within)
+    within_mat = sparse.csr_matrix(
+        (np.ones_like(indices, dtype=bool), indices, indptr), shape=(len(locs_pre), len(locs_post))
+    )
+    return within_mat, lookup_pre, lookup_post
 
 
 def compute(
@@ -29,6 +71,8 @@ def compute(
     sel_dest=None,
     skip_empty_groups=False,
     edges_popul_name=None,
+    max_distance=None,
+    props_for_distance=None,
     **_,
 ):
     """Computes the average connection probabilities and #synapses/connection between groups of neurons of a given circuit's connectome.
@@ -40,6 +84,8 @@ def compute(
         sel_dest (str/list-like/dict): Target (post-synaptic) neuron selection
         skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
         edges_popul_name (str): Name of SONATA egdes population to extract data from
+        max_distance (float): Optional. Maximum distance of pairs of neurons considered. If used, must also provide ``props_for_distance``.
+        props_for_distance (list): Optional. To be provided with ``max_distance``. Numerical node properties that are used to calculate the pairwise distances.
 
     Returns:
         dict: Dictionary containing the computed data elements; see Notes
@@ -54,6 +100,10 @@ def compute(
         * "nsyn_conn_max": Maximum number of synapses per connection
         * "conn_prob": Average connection probability
     """
+    if max_distance is not None:
+        assert (
+            props_for_distance is not None
+        ), "When specifying distance cutoff, must also specify properties to use!"
     # Select edge population
     edges = get_edges_population(circuit, edges_popul_name)
 
@@ -99,7 +149,7 @@ def compute(
         ]  # group_by will overwrite selection in case group property also exists in selection!
 
     print(
-        f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups)",
+        f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, max_distance={max_distance} based on {props_for_distance})",
         flush=True,
     )
 
@@ -117,19 +167,30 @@ def compute(
             pre_ids = get_node_ids(src_nodes, sel_pre)
             post_ids = get_node_ids(tgt_nodes, sel_post)
             conns = get_connections(edges, pre_ids, post_ids, with_nsyn=True)
+            npairs = len(pre_ids) * len(post_ids)
+
+            if conns.size > 0:
+                if max_distance is not None and len(pre_ids) > 0 and len(post_ids) > 0:
+                    M, lo_pre, lo_post = within_max_distance_matrix(
+                        (src_nodes, pre_ids),
+                        (tgt_nodes, post_ids),
+                        max_distance,
+                        props_for_distance,
+                    )
+                    is_within = np.asarray(M[lo_pre[conns[:, 0]], lo_post[conns[:, 1]]]).flatten()
+                    conns = conns[is_within]
+                    npairs = M.nnz
 
             if conns.size > 0:
                 scounts = conns[:, 2]  # Synapse counts per connection
                 ccount = len(scounts)  # Connection count
-                pre_count = len(pre_ids)
-                post_count = len(post_ids)
 
                 syn_table[idx_pre, idx_post] = np.mean(scounts)
                 syn_table_std[idx_pre, idx_post] = np.std(scounts)
                 syn_table_sem[idx_pre, idx_post] = np.std(scounts) / np.sqrt(ccount)
                 syn_table_min[idx_pre, idx_post] = np.min(scounts)
                 syn_table_max[idx_pre, idx_post] = np.max(scounts)
-                p_table[idx_pre, idx_post] = 100.0 * ccount / (pre_count * post_count)
+                p_table[idx_pre, idx_post] = 100.0 * ccount / npairs
 
     syn_table_name = "Synapses per connection"
     syn_table_unit = "#syn/conn"
