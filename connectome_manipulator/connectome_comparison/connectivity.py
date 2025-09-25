@@ -111,6 +111,8 @@ def compute(
     if group_by is None:
         src_group_sel = [sel_src]
         tgt_group_sel = [sel_dest]
+        src_group_values = [None]
+        tgt_group_values = [None]
     else:
         if (
             skip_empty_groups
