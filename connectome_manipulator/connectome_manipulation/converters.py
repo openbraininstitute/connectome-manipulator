@@ -205,7 +205,7 @@ def create_parquet_metadata(parquet_path, nodes):
         log.warning("No .parquet files exist, no metadata created!")
         return None  # No metadata if no .parquet files exist
 
-    schema = pq.ParquetDataset(parquet_path, use_legacy_dataset=False).schema
+    schema = pq.ParquetDataset(parquet_path).schema
     if schema.metadata:
         metadata = {k.decode(): v.decode() for k, v in schema.metadata.items()}
     else:
