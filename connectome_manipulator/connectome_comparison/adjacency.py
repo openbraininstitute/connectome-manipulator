@@ -89,7 +89,7 @@ def compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=None, **_):
             dtype=int,
         )
 
-    adj_matrix = count_matrix > 0
+    adj_matrix = csc_matrix(count_matrix > 0)
 
     return {
         "adj": {"data": adj_matrix, "name": "Adjacency", "unit": None},
