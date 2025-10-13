@@ -61,6 +61,44 @@ def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_di
     return within_mat, lookup_pre, lookup_post
 
 
+def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
+    """Returns the grouping selection and values for the given node population.
+
+    Args:
+        nodes (bluepysnap.nodes.NodePopulation): Node population
+        node_sel (str/list-like/dict): Neuron selection
+        group_by (str/tuple): Neuron property name based on which to group connections
+        skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
+
+    Returns:
+        list: List of grouping selection dicts
+        list: List of grouping values
+    """
+    if group_by is None:
+        group_sel = [node_sel]
+        group_values = [None]
+    else:
+        if (
+            skip_empty_groups
+        ):  # Take only group property values that exist within given src/tgt selection
+            group_values = np.unique(nodes.get(get_node_ids(nodes, node_sel), properties=group_by))
+        else:  # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
+            group_values = sorted(nodes.property_values(group_by))
+
+        if node_sel is None:
+            node_sel = {}
+        else:
+            assert isinstance(
+                node_sel, dict
+            ), "ERROR: Source/target node selection must be a dict or empty!"  # Otherwise, it cannot be merged with group selection
+
+        group_sel = [
+            {**node_sel, group_by: group_values[idx]} for idx in range(len(group_values))
+        ]  # group_by will overwrite selection in case group property also exists in selection!
+
+    return group_sel, group_values
+
+
 def compute(
     circuit,
     group_by=None,
@@ -76,7 +114,7 @@ def compute(
 
     Args:
         circuit (bluepysnap.Circuit): Input circuit
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; if omitted, the overall average is computed
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
         sel_src (str/list-like/dict): Source (pre-synaptic) neuron selection
         sel_dest (str/list-like/dict): Target (post-synaptic) neuron selection
         skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
@@ -108,44 +146,30 @@ def compute(
     src_nodes = edges.source
     tgt_nodes = edges.target
 
-    if group_by is None:
-        src_group_sel = [sel_src]
-        tgt_group_sel = [sel_dest]
-        src_group_values = [None]
-        tgt_group_values = [None]
-    else:
-        if (
-            skip_empty_groups
-        ):  # Take only group property values that exist within given src/tgt selection
-            src_group_values = np.unique(
-                src_nodes.get(get_node_ids(src_nodes, sel_src), properties=group_by)
-            )
-            tgt_group_values = np.unique(
-                tgt_nodes.get(get_node_ids(tgt_nodes, sel_dest), properties=group_by)
-            )
-        else:  # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
-            src_group_values = sorted(src_nodes.property_values(group_by))
-            tgt_group_values = sorted(tgt_nodes.property_values(group_by))
+    assert (
+        group_by is None or isinstance(group_by, str) or isinstance(group_by, tuple)
+    ), "ERROR: 'group_by' must be a string or tuple (or None)!"
+    if group_by is None or isinstance(group_by, str):
+        group_by = (group_by, group_by)
 
-        if sel_src is None:
-            sel_src = {}
-        else:
-            assert isinstance(
-                sel_src, dict
-            ), "ERROR: Source node selection must be a dict or empty!"  # Otherwise, it cannot be merged with group selection
-        if sel_dest is None:
-            sel_dest = {}
-        else:
-            assert isinstance(
-                sel_dest, dict
-            ), "ERROR: Target node selection must be a dict or empty!"  # Otherwise, it cannot be merged with group selection
+    assert (
+        len(group_by) == 2
+    ), "ERROR: 'group_by' must be a tuple with two elements for source/target neurons!"
+    src_group_by = group_by[0]
+    tgt_group_by = group_by[1]
+    assert src_group_by is None or isinstance(
+        src_group_by, str
+    ), "ERROR: Source 'group_by' must be a string (or None)!"
+    assert tgt_group_by is None or isinstance(
+        tgt_group_by, str
+    ), "ERROR: Target 'group_by' must be a string (or None)!"
 
-        src_group_sel = [
-            {**sel_src, group_by: src_group_values[idx]} for idx in range(len(src_group_values))
-        ]  # group_by will overwrite selection in case group property also exists in selection!
-        tgt_group_sel = [
-            {**sel_dest, group_by: tgt_group_values[idx]} for idx in range(len(tgt_group_values))
-        ]  # group_by will overwrite selection in case group property also exists in selection!
+    src_group_sel, src_group_values = get_grouping(
+        src_nodes, sel_src, src_group_by, skip_empty_groups
+    )
+    tgt_group_sel, tgt_group_values = get_grouping(
+        tgt_nodes, sel_dest, tgt_group_by, skip_empty_groups
+    )
 
     print(
         f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, max_distance={max_distance} based on {props_for_distance})",
