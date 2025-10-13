@@ -17,7 +17,6 @@ from utils import TEST_DATA_DIR
 import connectome_manipulator.connectome_comparison.connectivity as test_module
 
 
-
 def _get_conn(edges_table, src_ids, tgt_ids, nodes, group_by):
     """Extract connectivity matrices from edges table"""
     conns, cnts = np.unique(
@@ -50,42 +49,88 @@ def _get_conn(edges_table, src_ids, tgt_ids, nodes, group_by):
     df_nsyn_sem = df_nsyn.groupby(["src", "tgt"]).sem(ddof=0).fillna(0.0)
     df_nsyn_min = df_nsyn.groupby(["src", "tgt"]).min().fillna(0.0)
     df_nsyn_max = df_nsyn.groupby(["src", "tgt"]).max().fillna(0.0)
-    
-    return df_prob.unstack(), df_nsyn_mean.unstack(), df_nsyn_std.unstack(), df_nsyn_sem.unstack(), df_nsyn_min.unstack(), df_nsyn_max.unstack()
+
+    return (
+        df_prob.unstack(),
+        df_nsyn_mean.unstack(),
+        df_nsyn_std.unstack(),
+        df_nsyn_sem.unstack(),
+        df_nsyn_min.unstack(),
+        df_nsyn_max.unstack(),
+    )
 
 
-def _check_conn(res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by):
-    for _key in ["conn_prob", "nsyn_conn", "nsyn_conn_std", "nsyn_conn_sem", "nsyn_conn_min", "nsyn_conn_max", "common"]:
+def _check_conn(
+    res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+):
+    for _key in [
+        "conn_prob",
+        "nsyn_conn",
+        "nsyn_conn_std",
+        "nsyn_conn_sem",
+        "nsyn_conn_min",
+        "nsyn_conn_max",
+        "common",
+    ]:
         assert _key in res, f'ERROR: Results key "{_key}" missing!'
     for _key in ["src_group_values", "tgt_group_values"]:
         assert _key in res["common"], f'ERROR: Results key "{_key}" in "common" missing!'
-    for _key in ["conn_prob", "nsyn_conn", "nsyn_conn_std", "nsyn_conn_sem", "nsyn_conn_min", "nsyn_conn_max"]:
+    for _key in [
+        "conn_prob",
+        "nsyn_conn",
+        "nsyn_conn_std",
+        "nsyn_conn_sem",
+        "nsyn_conn_min",
+        "nsyn_conn_max",
+    ]:
         assert "data" in res[_key], f'ERROR: Results key "data" in "{_key}" missing!'
 
     if group_by is None:
-        assert_array_equal(res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!")
-        assert_array_equal(res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!")
+        assert_array_equal(
+            res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!"
+        )
+        assert_array_equal(
+            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
+        )
     else:
-        assert_array_equal(res["common"]["src_group_values"], df_prob.index.to_numpy(), "ERROR: Source group mismatch!")
-        assert_array_equal(res["common"]["tgt_group_values"], df_prob.columns.get_level_values(1).to_numpy(), "ERROR: Target group mismatch!")
+        assert_array_equal(
+            res["common"]["src_group_values"],
+            df_prob.index.to_numpy(),
+            "ERROR: Source group mismatch!",
+        )
+        assert_array_equal(
+            res["common"]["tgt_group_values"],
+            df_prob.columns.get_level_values(1).to_numpy(),
+            "ERROR: Target group mismatch!",
+        )
 
     assert_allclose(
         res["conn_prob"]["data"], df_prob.to_numpy(), err_msg="ERROR: Conn. prob. mismatch!"
     )
     assert_allclose(
-        res["nsyn_conn"]["data"], df_nsyn_mean.to_numpy(), err_msg="ERROR: Nsyn/conn (mean) mismatch!"
+        res["nsyn_conn"]["data"],
+        df_nsyn_mean.to_numpy(),
+        err_msg="ERROR: Nsyn/conn (mean) mismatch!",
     )
     assert_allclose(
-        res["nsyn_conn_std"]["data"], df_nsyn_std.to_numpy(), err_msg="ERROR: Nsyn/conn (std) mismatch!"        
+        res["nsyn_conn_std"]["data"],
+        df_nsyn_std.to_numpy(),
+        err_msg="ERROR: Nsyn/conn (std) mismatch!",
     )
     assert_allclose(
-        res["nsyn_conn_sem"]["data"], df_nsyn_sem.to_numpy(), err_msg="ERROR: Nsyn/conn (sem) mismatch!"
+        res["nsyn_conn_sem"]["data"],
+        df_nsyn_sem.to_numpy(),
+        err_msg="ERROR: Nsyn/conn (sem) mismatch!",
     )
     assert_allclose(
-        res["nsyn_conn_min"]["data"], df_nsyn_min.to_numpy(), err_msg="ERROR: Nsyn/conn (min) mismatch!"
+        res["nsyn_conn_min"]["data"],
+        df_nsyn_min.to_numpy(),
+        err_msg="ERROR: Nsyn/conn (min) mismatch!",
     )
     assert_allclose(
-        res["nsyn_conn_max"]["data"], df_nsyn_max.to_numpy(), err_msg="ERROR: Nsyn/conn (max) mismatch!"
+        res["nsyn_conn_max"]["data"],
+        df_nsyn_max.to_numpy(),
+        err_msg="ERROR: Nsyn/conn (max) mismatch!",
     )
 
 
@@ -101,38 +146,79 @@ def test_connectivity():
     with pytest.raises(
         AssertionError, match=re.escape(f'Population "{popul_name}" not found in edges file')
     ):
-        res = test_module.compute(circuit, sel_src=None, sel_dest=None, group_by=None, skip_empty_groups=False, edges_popul_name=popul_name)
-    
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            group_by=None,
+            skip_empty_groups=False,
+            edges_popul_name=popul_name,
+        )
+
     ## (b) Node set src/tgt selection w/o dict + group-by
     popul_name = "nodeA__nodeA__chemical"
-    with pytest.raises(AssertionError, match=re.escape("Source node selection must be a dict or empty")):
+    with pytest.raises(
+        AssertionError, match=re.escape("Source node selection must be a dict or empty")
+    ):
         res = test_module.compute(
             circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
         )
-    with pytest.raises(AssertionError, match=re.escape("Target node selection must be a dict or empty")):
+    with pytest.raises(
+        AssertionError, match=re.escape("Target node selection must be a dict or empty")
+    ):
         res = test_module.compute(
             circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
         )
-    
+
     # Case 2: Full circuit
     # (a) W/o group-by
     group_by = None
-    res = test_module.compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by)
-    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by)
-    _check_conn(res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by)
-    
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+        edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by
+    )
+    _check_conn(
+        res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+    )
+
     # (b) W/ group-by
     group_by = "layer"
-    res = test_module.compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by)
-    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by)
-    _check_conn(res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by)
-    
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+        edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by
+    )
+    _check_conn(
+        res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+    )
+
     # Case 3: Partial circuit (layer by layer) w/ group-by
     group_by = "mtype"
     for _src_lay in nodes[0].property_values("layer"):
         for _tgt_lay in nodes[1].property_values("layer"):
             sel_src = {"layer": _src_lay}
             sel_tgt = {"layer": _tgt_lay}
-            res = test_module.compute(circuit, sel_src=sel_src, sel_dest=sel_tgt, edges_popul_name=popul_name, group_by=group_by, skip_empty_groups=True)
-            df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(edges_table, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by)
-            _check_conn(res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by)
+            res = test_module.compute(
+                circuit,
+                sel_src=sel_src,
+                sel_dest=sel_tgt,
+                edges_popul_name=popul_name,
+                group_by=group_by,
+                skip_empty_groups=True,
+            )
+            df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+                edges_table, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by
+            )
+            _check_conn(
+                res,
+                df_prob,
+                df_nsyn_mean,
+                df_nsyn_std,
+                df_nsyn_sem,
+                df_nsyn_min,
+                df_nsyn_max,
+                group_by,
+            )

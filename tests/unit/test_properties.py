@@ -23,8 +23,12 @@ def _get_props(edges_table, src_ids, tgt_ids, nodes, group_by, prop_name):
     prop_mat_sum = np.zeros((len(src_ids), len(tgt_ids)), dtype=float) * np.nan
     prop_mat_cnt = np.zeros((len(src_ids), len(tgt_ids)), dtype=int)
     for _s, _t in conns:
-        edge_sel = np.logical_and(edges_table["@source_node"] == _s, edges_table["@target_node"] == _t)
-        prop_mat_sum[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = edges_table.loc[edge_sel, prop_name].sum()
+        edge_sel = np.logical_and(
+            edges_table["@source_node"] == _s, edges_table["@target_node"] == _t
+        )
+        prop_mat_sum[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = edges_table.loc[
+            edge_sel, prop_name
+        ].sum()
         prop_mat_cnt[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = np.sum(edge_sel)
 
     if group_by is None:
@@ -45,7 +49,7 @@ def _get_props(edges_table, src_ids, tgt_ids, nodes, group_by, prop_name):
     df_props_cnt = df_props_cnt.groupby(["src", "tgt"]).sum()
 
     df_props = df_props_sum / df_props_cnt
-    
+
     return df_props.unstack()
 
 
@@ -57,14 +61,29 @@ def _check_props(res, df_props, group_by, prop_name):
     assert "data" in res[prop_name], f'ERROR: Results key "data" in "{prop_name}" missing!'
 
     if group_by is None:
-        assert_array_equal(res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!")
-        assert_array_equal(res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!")
+        assert_array_equal(
+            res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!"
+        )
+        assert_array_equal(
+            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
+        )
     else:
-        assert_array_equal(res["common"]["src_group_values"], df_props.index.to_numpy(), "ERROR: Source group mismatch!")
-        assert_array_equal(res["common"]["tgt_group_values"], df_props.columns.get_level_values(1).to_numpy(), "ERROR: Target group mismatch!")        
+        assert_array_equal(
+            res["common"]["src_group_values"],
+            df_props.index.to_numpy(),
+            "ERROR: Source group mismatch!",
+        )
+        assert_array_equal(
+            res["common"]["tgt_group_values"],
+            df_props.columns.get_level_values(1).to_numpy(),
+            "ERROR: Target group mismatch!",
+        )
 
     assert_allclose(
-        res[prop_name]["data"], df_props.to_numpy(), rtol=1e-06, err_msg=f'ERROR: "{prop_name}" mismatch!'
+        res[prop_name]["data"],
+        df_props.to_numpy(),
+        rtol=1e-06,
+        err_msg=f'ERROR: "{prop_name}" mismatch!',
     )
 
 
@@ -80,42 +99,70 @@ def test_properties():
     with pytest.raises(
         AssertionError, match=re.escape(f'Population "{popul_name}" not found in edges file')
     ):
-        res = test_module.compute(circuit, sel_src=None, sel_dest=None, group_by=None, skip_empty_groups=False, edges_popul_name=popul_name)
-    
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            group_by=None,
+            skip_empty_groups=False,
+            edges_popul_name=popul_name,
+        )
+
     ## (b) Node set src/tgt selection w/o dict + group-by
     popul_name = "nodeA__nodeA__chemical"
-    with pytest.raises(AssertionError, match=re.escape("Source node selection must be a dict or empty")):
+    with pytest.raises(
+        AssertionError, match=re.escape("Source node selection must be a dict or empty")
+    ):
         res = test_module.compute(
             circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
         )
-    with pytest.raises(AssertionError, match=re.escape("Target node selection must be a dict or empty")):
+    with pytest.raises(
+        AssertionError, match=re.escape("Target node selection must be a dict or empty")
+    ):
         res = test_module.compute(
             circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
         )
-    
+
     # Case 2: Full circuit
     # (a) W/o group-by
     group_by = None
-    res = test_module.compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by)
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
     for eprop in edges.property_names:
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
-    
+
     # (b) W/ group-by
     group_by = "layer"
-    res = test_module.compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by)
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
     for eprop in edges.property_names:
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
-    
+
     # Case 3: Partial circuit (layer by layer) w/ group-by
     group_by = "mtype"
     for _src_lay in nodes[0].property_values("layer"):
         for _tgt_lay in nodes[1].property_values("layer"):
             sel_src = {"layer": _src_lay}
             sel_tgt = {"layer": _tgt_lay}
-            res = test_module.compute(circuit, sel_src=sel_src, sel_dest=sel_tgt, edges_popul_name=popul_name, group_by=group_by, skip_empty_groups=True)
+            res = test_module.compute(
+                circuit,
+                sel_src=sel_src,
+                sel_dest=sel_tgt,
+                edges_popul_name=popul_name,
+                group_by=group_by,
+                skip_empty_groups=True,
+            )
             for eprop in edges.property_names:
-                df_props = _get_props(edges_table, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by, eprop)
+                df_props = _get_props(
+                    edges_table,
+                    nodes[0].ids(sel_src),
+                    nodes[1].ids(sel_tgt),
+                    nodes,
+                    group_by,
+                    eprop,
+                )
                 _check_props(res, df_props, group_by, eprop)
-
