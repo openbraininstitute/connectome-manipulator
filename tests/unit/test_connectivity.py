@@ -28,12 +28,16 @@ def _get_conn(edges_table, src_ids, tgt_ids, nodes, group_by):
         adj_mat[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = True
         cnt_mat[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = _c
 
-    if group_by is None:
+    if not isinstance(group_by, tuple):
+        group_by = (group_by, group_by)
+    if group_by[0] is None:
         src_grp = np.zeros_like(src_ids)
+    else:
+        src_grp = nodes[0].get(src_ids, properties=group_by[0]).values
+    if group_by[1] is None:
         tgt_grp = np.zeros_like(tgt_ids)
     else:
-        src_grp = nodes[0].get(src_ids, properties=group_by).values
-        tgt_grp = nodes[1].get(tgt_ids, properties=group_by).values
+        tgt_grp = nodes[1].get(tgt_ids, properties=group_by[1]).values
 
     df_prob = pd.DataFrame(adj_mat, columns=tgt_grp)
     df_prob["src"] = src_grp
@@ -85,12 +89,11 @@ def _check_conn(
     ]:
         assert "data" in res[_key], f'ERROR: Results key "data" in "{_key}" missing!'
 
-    if group_by is None:
+    if not isinstance(group_by, tuple):
+        group_by = (group_by, group_by)
+    if group_by[0] is None:
         assert_array_equal(
             res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!"
-        )
-        assert_array_equal(
-            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
         )
     else:
         assert_array_equal(
@@ -98,12 +101,16 @@ def _check_conn(
             df_prob.index.to_numpy(),
             "ERROR: Source group mismatch!",
         )
+    if group_by[1] is None:
+        assert_array_equal(
+            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
+        )
+    else:
         assert_array_equal(
             res["common"]["tgt_group_values"],
             df_prob.columns.get_level_values(1).to_numpy(),
             "ERROR: Target group mismatch!",
         )
-
     assert_allclose(
         res["conn_prob"]["data"], df_prob.to_numpy(), err_msg="ERROR: Conn. prob. mismatch!"
     )
@@ -158,16 +165,46 @@ def test_connectivity():
     ## (b) Node set src/tgt selection w/o dict + group-by
     popul_name = "nodeA__nodeA__chemical"
     with pytest.raises(
-        AssertionError, match=re.escape("Source node selection must be a dict or empty")
+        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
     ):
         res = test_module.compute(
             circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
         )
     with pytest.raises(
-        AssertionError, match=re.escape("Target node selection must be a dict or empty")
+        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
     ):
         res = test_module.compute(
             circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
+        )
+
+    ## (c) Invalid group-by
+    popul_name = "nodeA__nodeA__chemical"
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("'group_by' must be a tuple with two elements for source/target neurons"),
+    ):
+        res = test_module.compute(
+            circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=("mtype",)
+        )
+    with pytest.raises(
+        AssertionError, match=re.escape("Source 'group_by' must be a string (or None)")
+    ):
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            edges_popul_name=popul_name,
+            group_by=(123, "mtype"),
+        )
+    with pytest.raises(
+        AssertionError, match=re.escape("Target 'group_by' must be a string (or None)")
+    ):
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            edges_popul_name=popul_name,
+            group_by=("mtype", 123),
         )
 
     # Case 2: Full circuit
@@ -185,6 +222,42 @@ def test_connectivity():
 
     # (b) W/ group-by
     group_by = "layer"
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+        edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by
+    )
+    _check_conn(
+        res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+    )
+
+    # (c) W/ group-by (src only)
+    group_by = ("layer", None)
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+        edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by
+    )
+    _check_conn(
+        res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+    )
+
+    # (d) W/ group-by (tgt only)
+    group_by = (None, "layer")
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max = _get_conn(
+        edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by
+    )
+    _check_conn(
+        res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
+    )
+
+    # (d) W/ group-by (different src/tgt)
+    group_by = ("layer", "mtype")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
     )
