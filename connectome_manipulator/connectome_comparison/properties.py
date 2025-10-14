@@ -36,7 +36,7 @@ def compute(
     Args:
         circuit (bluepysnap.Circuit): Input circuit
         fct (str): Function to apply, e.g., "np.mean", "np.std"
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
         sel_src (str/list-like/dict): Source (pre-synaptic) neuron selection
         sel_dest (str/list-like/dict): Target (post-synaptic) neuron selection
         per_conn (bool): If selected, ``fct`` is applied to the average property value per connection (i.e., average value of all synapses belonging to a connection); otherwise, ``fct`` is applied to the synapses of all connections altogether
@@ -132,7 +132,7 @@ def plot(
         vmin (float): Minimum plot range
         vmax (float): Maximum plot range
         isdiff (bool): Flag indicating that ``res_dict`` contains a difference matrix; in this case, a symmetric plot range is required and a divergent colormap will be used
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
     """
     if isdiff:  # Difference plot
         assert -1 * vmin == vmax, "ERROR: Symmetric plot range required!"

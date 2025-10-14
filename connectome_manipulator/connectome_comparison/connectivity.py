@@ -207,7 +207,7 @@ def plot(
         vmin (float): Minimum plot range
         vmax (float): Maximum plot range
         isdiff (bool): Flag indicating that ``res_dict`` contains a difference matrix; in this case, a symmetric plot range is required and a divergent colormap will be used
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
     """
     if isdiff:  # Difference plot
         assert -1 * vmin == vmax, "ERROR: Symmetric plot range required!"
