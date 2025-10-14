@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import progressbar
-from connectome_manipulator.access_functions import get_edges_population, get_node_ids
+from connectome_manipulator.access_functions import get_edges_population, get_node_ids, get_grouping
+from connectome_manipulator.utils import check_grouping
 
 
 def compute(
@@ -35,7 +36,7 @@ def compute(
     Args:
         circuit (bluepysnap.Circuit): Input circuit
         fct (str): Function to apply, e.g., "np.mean", "np.std"
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; if omitted, the overall average is computed
+        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
         sel_src (str/list-like/dict): Source (pre-synaptic) neuron selection
         sel_dest (str/list-like/dict): Target (post-synaptic) neuron selection
         per_conn (bool): If selected, ``fct`` is applied to the average property value per connection (i.e., average value of all synapses belonging to a connection); otherwise, ``fct`` is applied to the synapses of all connections altogether
@@ -62,44 +63,14 @@ def compute(
     src_nodes = edges.source
     tgt_nodes = edges.target
 
-    if group_by is None:
-        src_group_sel = [sel_src]
-        tgt_group_sel = [sel_dest]
-        src_group_values = [None]
-        tgt_group_values = [None]
-    else:
-        if (
-            skip_empty_groups
-        ):  # Take only group property values that exist within given src/tgt selection
-            src_group_values = np.unique(
-                src_nodes.get(get_node_ids(src_nodes, sel_src), properties=group_by)
-            )
-            tgt_group_values = np.unique(
-                tgt_nodes.get(get_node_ids(tgt_nodes, sel_dest), properties=group_by)
-            )
-        else:  # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
-            src_group_values = sorted(src_nodes.property_values(group_by))
-            tgt_group_values = sorted(tgt_nodes.property_values(group_by))
-
-        if sel_src is None:
-            sel_src = {}
-        else:
-            assert isinstance(
-                sel_src, dict
-            ), "ERROR: Source node selection must be a dict or empty!"  # Otherwise, it cannot be merged with group selection
-        if sel_dest is None:
-            sel_dest = {}
-        else:
-            assert isinstance(
-                sel_dest, dict
-            ), "ERROR: Target node selection must be a dict or empty!"  # Otherwise, it cannot be merged with pathway selection
-
-        src_group_sel = [
-            {**sel_src, group_by: src_group_values[idx]} for idx in range(len(src_group_values))
-        ]  # group_by will overwrite selection in case group property also exists in selection!
-        tgt_group_sel = [
-            {**sel_dest, group_by: tgt_group_values[idx]} for idx in range(len(tgt_group_values))
-        ]  # group_by will overwrite selection in case group property also exists in selection!
+    # Get grouping selection
+    src_group_by, tgt_group_by = check_grouping(group_by)
+    src_group_sel, src_group_values = get_grouping(
+        src_nodes, sel_src, src_group_by, skip_empty_groups
+    )
+    tgt_group_sel, tgt_group_values = get_grouping(
+        tgt_nodes, sel_dest, tgt_group_by, skip_empty_groups
+    )
 
     print(
         f"INFO: Extracting synapse properties (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, per_conn={per_conn})",
@@ -161,7 +132,7 @@ def plot(
         vmin (float): Minimum plot range
         vmax (float): Maximum plot range
         isdiff (bool): Flag indicating that ``res_dict`` contains a difference matrix; in this case, a symmetric plot range is required and a divergent colormap will be used
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; if omitted, the overall average is computed
+        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
     """
     if isdiff:  # Difference plot
         assert -1 * vmin == vmax, "ERROR: Symmetric plot range required!"
@@ -176,9 +147,15 @@ def plot(
     else:
         plt.title(fig_title)
 
-    if group_by:
-        plt.xlabel(f"Postsynaptic {group_by}")
-        plt.ylabel(f"Presynaptic {group_by}")
+    src_group_by, tgt_group_by = check_grouping(group_by)
+
+    src_lbl = tgt_lbl = "(all)"
+    if src_group_by:
+        src_lbl = str(src_group_by)
+    if tgt_group_by:
+        tgt_lbl = str(tgt_group_by)
+    plt.xlabel(f"Postsynaptic {tgt_lbl}")
+    plt.ylabel(f"Presynaptic {src_lbl}")
 
     n_grp = np.maximum(len(common_dict["src_group_values"]), len(common_dict["tgt_group_values"]))
     font_size = max(13 - n_grp / 6, 1)  # Font scaling
