@@ -31,12 +31,16 @@ def _get_props(edges_table, src_ids, tgt_ids, nodes, group_by, prop_name):
         ].sum()
         prop_mat_cnt[np.where(src_ids == _s)[0], np.where(tgt_ids == _t)[0]] = np.sum(edge_sel)
 
-    if group_by is None:
+    if not isinstance(group_by, tuple):
+        group_by = (group_by, group_by)
+    if group_by[0] is None:
         src_grp = np.zeros_like(src_ids)
+    else:
+        src_grp = nodes[0].get(src_ids, properties=group_by[0]).values
+    if group_by[1] is None:
         tgt_grp = np.zeros_like(tgt_ids)
     else:
-        src_grp = nodes[0].get(src_ids, properties=group_by).values
-        tgt_grp = nodes[1].get(tgt_ids, properties=group_by).values
+        tgt_grp = nodes[1].get(tgt_ids, properties=group_by[1]).values
 
     df_props_sum = pd.DataFrame(prop_mat_sum, columns=tgt_grp)
     df_props_sum["src"] = src_grp
@@ -60,12 +64,11 @@ def _check_props(res, df_props, group_by, prop_name):
         assert _key in res["common"], f'ERROR: Results key "{_key}" in "common" missing!'
     assert "data" in res[prop_name], f'ERROR: Results key "data" in "{prop_name}" missing!'
 
-    if group_by is None:
+    if not isinstance(group_by, tuple):
+        group_by = (group_by, group_by)
+    if group_by[0] is None:
         assert_array_equal(
             res["common"]["src_group_values"], [None], "ERROR: Source group mismatch!"
-        )
-        assert_array_equal(
-            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
         )
     else:
         assert_array_equal(
@@ -73,12 +76,16 @@ def _check_props(res, df_props, group_by, prop_name):
             df_props.index.to_numpy(),
             "ERROR: Source group mismatch!",
         )
+    if group_by[1] is None:
+        assert_array_equal(
+            res["common"]["tgt_group_values"], [None], "ERROR: Target group mismatch!"
+        )
+    else:
         assert_array_equal(
             res["common"]["tgt_group_values"],
             df_props.columns.get_level_values(1).to_numpy(),
             "ERROR: Target group mismatch!",
         )
-
     assert_allclose(
         res[prop_name]["data"],
         df_props.to_numpy(),
@@ -111,16 +118,45 @@ def test_properties():
     ## (b) Node set src/tgt selection w/o dict + group-by
     popul_name = "nodeA__nodeA__chemical"
     with pytest.raises(
-        AssertionError, match=re.escape("Source node selection must be a dict or empty")
+        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
     ):
         res = test_module.compute(
             circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
         )
     with pytest.raises(
-        AssertionError, match=re.escape("Target node selection must be a dict or empty")
+        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
     ):
         res = test_module.compute(
             circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
+        )
+
+    ## (c) Invalid group-by
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("'group_by' must be a tuple with two elements for source/target neurons"),
+    ):
+        res = test_module.compute(
+            circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=("mtype",)
+        )
+    with pytest.raises(
+        AssertionError, match=re.escape("Source 'group_by' must be a string (or None)")
+    ):
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            edges_popul_name=popul_name,
+            group_by=(123, "mtype"),
+        )
+    with pytest.raises(
+        AssertionError, match=re.escape("Target 'group_by' must be a string (or None)")
+    ):
+        res = test_module.compute(
+            circuit,
+            sel_src=None,
+            sel_dest=None,
+            edges_popul_name=popul_name,
+            group_by=("mtype", 123),
         )
 
     # Case 2: Full circuit
@@ -135,6 +171,33 @@ def test_properties():
 
     # (b) W/ group-by
     group_by = "layer"
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    for eprop in edges.property_names:
+        df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
+        _check_props(res, df_props, group_by, eprop)
+
+    # (c) W/ group-by (src only)
+    group_by = ("layer", None)
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    for eprop in edges.property_names:
+        df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
+        _check_props(res, df_props, group_by, eprop)
+
+    # (d) W/ group-by (tgt only)
+    group_by = (None, "layer")
+    res = test_module.compute(
+        circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
+    )
+    for eprop in edges.property_names:
+        df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
+        _check_props(res, df_props, group_by, eprop)
+
+    # (e) W/ group-by (different src/tgt)
+    group_by = ("layer", "mtype")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
     )
