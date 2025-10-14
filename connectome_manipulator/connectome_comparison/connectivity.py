@@ -224,13 +224,13 @@ def plot(
 
     src_group_by, tgt_group_by = check_grouping(group_by)
 
-    src_lbl = tgt_lbl = ""
+    src_lbl = tgt_lbl = "(all)"
     if src_group_by:
-        src_lbl = f" {src_group_by}"
+        src_lbl = str(src_group_by)
     if tgt_group_by:
-        tgt_lbl = f" {tgt_group_by}"
-    plt.xlabel(f"Postsynaptic{tgt_lbl}")
-    plt.ylabel(f"Presynaptic{src_lbl}")
+        tgt_lbl = str(tgt_group_by)
+    plt.xlabel(f"Postsynaptic {tgt_lbl}")
+    plt.ylabel(f"Presynaptic {src_lbl}")
 
     n_grp = np.maximum(len(common_dict["src_group_values"]), len(common_dict["tgt_group_values"]))
     font_size = max(13 - n_grp / 6, 1)  # Font scaling
