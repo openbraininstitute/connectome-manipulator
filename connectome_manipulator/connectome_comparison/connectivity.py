@@ -23,6 +23,7 @@ from connectome_manipulator.access_functions import (
     get_connections,
     get_grouping,
 )
+from connectome_manipulator.utils import check_grouping
 
 
 def within_max_distance_matrix(pre_neurons, post_neurons, max_dist, props_for_distance):
@@ -109,24 +110,8 @@ def compute(
     src_nodes = edges.source
     tgt_nodes = edges.target
 
-    assert group_by is None or isinstance(
-        group_by, (str, tuple)
-    ), "ERROR: 'group_by' must be a string or tuple (or None)!"
-    if group_by is None or isinstance(group_by, str):
-        group_by = (group_by, group_by)
-
-    assert (
-        len(group_by) == 2
-    ), "ERROR: 'group_by' must be a tuple with two elements for source/target neurons!"
-    src_group_by = group_by[0]
-    tgt_group_by = group_by[1]
-    assert src_group_by is None or isinstance(
-        src_group_by, str
-    ), "ERROR: Source 'group_by' must be a string (or None)!"
-    assert tgt_group_by is None or isinstance(
-        tgt_group_by, str
-    ), "ERROR: Target 'group_by' must be a string (or None)!"
-
+    # Get grouping selection
+    src_group_by, tgt_group_by = check_grouping(group_by)
     src_group_sel, src_group_values = get_grouping(
         src_nodes, sel_src, src_group_by, skip_empty_groups
     )
@@ -222,7 +207,7 @@ def plot(
         vmin (float): Minimum plot range
         vmax (float): Maximum plot range
         isdiff (bool): Flag indicating that ``res_dict`` contains a difference matrix; in this case, a symmetric plot range is required and a divergent colormap will be used
-        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; if omitted, the overall average is computed
+        group_by (str): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons; if omitted, the overall average is computed
     """
     if isdiff:  # Difference plot
         assert -1 * vmin == vmax, "ERROR: Symmetric plot range required!"

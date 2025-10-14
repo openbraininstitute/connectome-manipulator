@@ -158,6 +158,36 @@ def _reduce_dict(entry: dict, base_dir: os.PathLike) -> dict:
     return reduced_dict
 
 
+def check_grouping(group_by):
+    """Helper function to check grouping for source/target neurons.
+
+    Args:
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons or omitted
+
+    Returns:
+        str: Source grouping property name
+        str: Target grouping property name
+    """
+    if not isinstance(group_by, tuple):
+        group_by = (group_by, group_by)
+
+    assert (
+        len(group_by) == 2
+    ), "ERROR: 'group_by' must be a tuple with two elements for source/target neurons!"
+
+    src_group_by = group_by[0]
+    tgt_group_by = group_by[1]
+
+    assert src_group_by is None or isinstance(
+        src_group_by, str
+    ), "ERROR: Source 'group_by' must be a string (or None)!"
+    assert tgt_group_by is None or isinstance(
+        tgt_group_by, str
+    ), "ERROR: Target 'group_by' must be a string (or None)!"
+
+    return src_group_by, tgt_group_by
+
+
 class ConsoleColors:
     """Helper class for formatting console text."""
 
