@@ -325,7 +325,7 @@ def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
     Args:
         nodes (bluepysnap.nodes.NodePopulation): Node population
         node_sel (str/list-like/dict): Neuron selection
-        group_by (str/tuple): Neuron property name based on which to group connections
+        group_by (str): Neuron property name based on which to group connections
         skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
 
     Returns:
