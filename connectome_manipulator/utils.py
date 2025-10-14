@@ -182,16 +182,19 @@ def check_grouping(group_by, src_nodes=None, tgt_nodes=None):
         population, it will apply grouping only on the population where it exists (instead of raising an error).
     """
     if not isinstance(group_by, tuple):
-        group_by_lbl = str(group_by)
-        # If only one grouping property is provided, propagate only to the populations where it actually exists
-        group_by = (
-            _check_node_property(group_by, src_nodes),
-            _check_node_property(group_by, tgt_nodes),
-        )
-        # But make sure it exists in at least one of the source/target populations
-        assert any(
-            _g is not None for _g in group_by
-        ), f"ERROR: Grouping property '{group_by_lbl}' does not exist in either source or target node population!"
+        if group_by is None:
+            group_by = (group_by, group_by)
+        else:
+            group_by_lbl = str(group_by)
+            # If only one grouping property is provided, propagate only to the populations where it actually exists
+            group_by = (
+                _check_node_property(group_by, src_nodes),
+                _check_node_property(group_by, tgt_nodes),
+            )
+            # But make sure it exists in at least one of the source/target populations
+            assert any(
+                _g is not None for _g in group_by
+            ), f"ERROR: Grouping property '{group_by_lbl}' does not exist in either source or target node population!"
 
     assert (
         len(group_by) == 2
