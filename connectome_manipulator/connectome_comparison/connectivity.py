@@ -111,7 +111,7 @@ def compute(
     tgt_nodes = edges.target
 
     # Get grouping selection
-    src_group_by, tgt_group_by = check_grouping(group_by)
+    src_group_by, tgt_group_by = check_grouping(group_by, src_nodes, tgt_nodes)
     src_group_sel, src_group_values = get_grouping(
         src_nodes, sel_src, src_group_by, skip_empty_groups
     )
@@ -168,31 +168,41 @@ def compute(
     p_table_name = "Connection probability"
     p_table_unit = "Conn. prob. (%)"
 
-    return {
-        "nsyn_conn": {"data": syn_table, "name": syn_table_name, "unit": "Mean " + syn_table_unit},
-        "nsyn_conn_std": {
-            "data": syn_table_std,
-            "name": syn_table_name,
-            "unit": "Std of " + syn_table_unit,
-        },
-        "nsyn_conn_sem": {
-            "data": syn_table_sem,
-            "name": syn_table_name,
-            "unit": "SEM of " + syn_table_unit,
-        },
-        "nsyn_conn_min": {
-            "data": syn_table_min,
-            "name": syn_table_name,
-            "unit": "Min " + syn_table_unit,
-        },
-        "nsyn_conn_max": {
-            "data": syn_table_max,
-            "name": syn_table_name,
-            "unit": "Max " + syn_table_unit,
-        },
-        "conn_prob": {"data": p_table, "name": p_table_name, "unit": p_table_unit},
-        "common": {"src_group_values": src_group_values, "tgt_group_values": tgt_group_values},
+    all_res_dict = {}
+    all_res_dict["nsyn_conn"] = {
+        "data": syn_table,
+        "name": syn_table_name,
+        "unit": "Mean " + syn_table_unit,
     }
+    all_res_dict["nsyn_conn_std"] = {
+        "data": syn_table_std,
+        "name": syn_table_name,
+        "unit": "Std of " + syn_table_unit,
+    }
+    all_res_dict["nsyn_conn_sem"] = {
+        "data": syn_table_sem,
+        "name": syn_table_name,
+        "unit": "SEM of " + syn_table_unit,
+    }
+    all_res_dict["nsyn_conn_min"] = {
+        "data": syn_table_min,
+        "name": syn_table_name,
+        "unit": "Min " + syn_table_unit,
+    }
+    all_res_dict["nsyn_conn_max"] = {
+        "data": syn_table_max,
+        "name": syn_table_name,
+        "unit": "Max " + syn_table_unit,
+    }
+    all_res_dict["conn_prob"] = {"data": p_table, "name": p_table_name, "unit": p_table_unit}
+    all_res_dict["common"] = {
+        "src_group_values": src_group_values,
+        "tgt_group_values": tgt_group_values,
+        "src_group_by": src_group_by,
+        "tgt_group_by": tgt_group_by,
+    }
+
+    return all_res_dict
 
 
 def plot(
@@ -222,7 +232,12 @@ def plot(
     else:
         plt.title(fig_title)
 
-    src_group_by, tgt_group_by = check_grouping(group_by)
+    if "src_group_by" in common_dict and "tgt_group_by" in common_dict:
+        src_group_by = common_dict["src_group_by"]
+        tgt_group_by = common_dict["tgt_group_by"]
+    else:
+        # Backward compatibility
+        src_group_by, tgt_group_by = check_grouping(group_by)
 
     src_lbl = tgt_lbl = "(all)"
     if src_group_by:

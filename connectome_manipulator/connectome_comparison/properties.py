@@ -64,7 +64,7 @@ def compute(
     tgt_nodes = edges.target
 
     # Get grouping selection
-    src_group_by, tgt_group_by = check_grouping(group_by)
+    src_group_by, tgt_group_by = check_grouping(group_by, src_nodes, tgt_nodes)
     src_group_sel, src_group_values = get_grouping(
         src_nodes, sel_src, src_group_by, skip_empty_groups
     )
@@ -104,7 +104,7 @@ def compute(
 
     fname = prop_fct.__name__[0].upper() + prop_fct.__name__[1:]
     cname = " (per conn)" if per_conn else ""
-    res_dict = {
+    all_res_dict = {
         edge_props[idx]: {
             "data": prop_tables[:, :, idx],
             "name": f'"{edge_props[idx]}" property',
@@ -112,12 +112,14 @@ def compute(
         }
         for idx in range(len(edge_props))
     }
-    res_dict["common"] = {
+    all_res_dict["common"] = {
         "src_group_values": src_group_values,
         "tgt_group_values": tgt_group_values,
+        "src_group_by": src_group_by,
+        "tgt_group_by": tgt_group_by,
     }
 
-    return res_dict
+    return all_res_dict
 
 
 def plot(
@@ -147,7 +149,12 @@ def plot(
     else:
         plt.title(fig_title)
 
-    src_group_by, tgt_group_by = check_grouping(group_by)
+    if "src_group_by" in common_dict and "tgt_group_by" in common_dict:
+        src_group_by = common_dict["src_group_by"]
+        tgt_group_by = common_dict["tgt_group_by"]
+    else:
+        # Backward compatibility
+        src_group_by, tgt_group_by = check_grouping(group_by)
 
     src_lbl = tgt_lbl = "(all)"
     if src_group_by:
