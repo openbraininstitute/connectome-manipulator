@@ -146,8 +146,8 @@ def compute(
     src_nodes = edges.source
     tgt_nodes = edges.target
 
-    assert (
-        group_by is None or isinstance(group_by, str) or isinstance(group_by, tuple)
+    assert group_by is None or isinstance(
+        group_by, (str, tuple)
     ), "ERROR: 'group_by' must be a string or tuple (or None)!"
     if group_by is None or isinstance(group_by, str):
         group_by = (group_by, group_by)
