@@ -159,19 +159,19 @@ def _reduce_dict(entry: dict, base_dir: os.PathLike) -> dict:
 
 
 def _check_node_property(property_name, nodes):
-    if property_name in nodes.property_names:
+    if nodes is None or property_name in nodes.property_names:
         return property_name
     else:
         return None
 
 
-def check_grouping(group_by, src_nodes, tgt_nodes):
+def check_grouping(group_by, src_nodes=None, tgt_nodes=None):
     """Helper function to check grouping for source/target neurons.
 
     Args:
         group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons or omitted
-        src_nodes (bluepysnap.nodes.NodePopulation): Source node population
-        tgt_nodes (bluepysnap.nodes.NodePopulation): Target node population
+        src_nodes (bluepysnap.nodes.NodePopulation): Source node population (optional)
+        tgt_nodes (bluepysnap.nodes.NodePopulation): Target node population (optional)
 
     Returns:
         str: Source grouping property name
