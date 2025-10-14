@@ -210,6 +210,15 @@ def check_grouping(group_by, src_nodes=None, tgt_nodes=None):
         tgt_group_by, str
     ), "ERROR: Target 'group_by' must be a string (or None)!"
 
+    if src_group_by is not None:
+        assert (
+            _check_node_property(src_group_by, src_nodes) is not None
+        ), f"ERROR: Grouping property '{src_group_by}' does not exist in source node population!"
+    if tgt_group_by is not None:
+        assert (
+            _check_node_property(tgt_group_by, tgt_nodes) is not None
+        ), f"ERROR: Grouping property '{tgt_group_by}' does not exist in target node population!"
+
     return src_group_by, tgt_group_by
 
 
