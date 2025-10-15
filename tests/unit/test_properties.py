@@ -115,22 +115,8 @@ def test_properties():
             edges_popul_name=popul_name,
         )
 
-    ## (b) Node set src/tgt selection w/o dict + group-by
+    ## (b) Invalid group-by
     popul_name = "nodeA__nodeA__chemical"
-    with pytest.raises(
-        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
-    ):
-        res = test_module.compute(
-            circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
-        )
-    with pytest.raises(
-        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
-    ):
-        res = test_module.compute(
-            circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
-        )
-
-    ## (c) Invalid group-by
     with pytest.raises(
         AssertionError,
         match=re.escape("'group_by' must be a tuple with two elements for source/target neurons"),
@@ -160,7 +146,7 @@ def test_properties():
         )
 
     # Case 2: Full circuit
-    # (a) W/o group-by
+    ## (a) W/o group-by
     group_by = None
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -169,7 +155,7 @@ def test_properties():
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
 
-    # (b) W/ group-by
+    ## (b) W/ group-by
     group_by = "layer"
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -178,7 +164,7 @@ def test_properties():
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
 
-    # (c) W/ group-by (src only)
+    ## (c) W/ group-by (src only)
     group_by = ("layer", None)
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -187,7 +173,7 @@ def test_properties():
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
 
-    # (d) W/ group-by (tgt only)
+    ## (d) W/ group-by (tgt only)
     group_by = (None, "layer")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -196,7 +182,7 @@ def test_properties():
         df_props = _get_props(edges_table, nodes[0].ids(), nodes[1].ids(), nodes, group_by, eprop)
         _check_props(res, df_props, group_by, eprop)
 
-    # (e) W/ group-by (different src/tgt)
+    ## (e) W/ group-by (different src/tgt)
     group_by = ("layer", "mtype")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by

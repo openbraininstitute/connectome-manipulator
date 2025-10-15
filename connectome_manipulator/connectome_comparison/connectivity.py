@@ -119,6 +119,10 @@ def compute(
         tgt_nodes, sel_dest, tgt_group_by, skip_empty_groups
     )
 
+    # Preselect neurons
+    src_ids_base = get_node_ids(src_nodes, sel_src)
+    tgt_ids_base = get_node_ids(tgt_nodes, sel_dest)
+
     print(
         f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, max_distance={max_distance} based on {props_for_distance})",
         flush=True,
@@ -135,8 +139,10 @@ def compute(
         sel_pre = src_group_sel[idx_pre]
         for idx_post, _ in enumerate(tgt_group_sel):
             sel_post = tgt_group_sel[idx_post]
-            pre_ids = get_node_ids(src_nodes, sel_pre)
-            post_ids = get_node_ids(tgt_nodes, sel_post)
+            pre_ids = get_node_ids(src_nodes, sel_pre)  # Grouping selection
+            post_ids = get_node_ids(tgt_nodes, sel_post)  # Grouping selection
+            pre_ids = np.intersect1d(pre_ids, src_ids_base)  # Merge with base selection
+            post_ids = np.intersect1d(post_ids, tgt_ids_base)  # Merge with base selection
             conns = get_connections(edges, pre_ids, post_ids, with_nsyn=True)
             npairs = len(pre_ids) * len(post_ids)
 

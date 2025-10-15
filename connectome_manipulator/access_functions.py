@@ -333,7 +333,7 @@ def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
         list: List of grouping values
     """
     if group_by is None:
-        group_sel = [node_sel]
+        group_sel = [None]
         group_values = [None]
     else:
         if skip_empty_groups:
@@ -343,15 +343,6 @@ def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
             # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
             group_values = sorted(nodes.property_values(group_by))
 
-        if node_sel is None:
-            node_sel = {}
-        else:
-            assert isinstance(
-                node_sel, dict
-            ), "ERROR: Source/target node selection must be a dict or empty!"  # Otherwise, it cannot be merged with group selection
-
-        group_sel = [
-            {**node_sel, group_by: group_values[idx]} for idx in range(len(group_values))
-        ]  # group_by will overwrite selection in case group property also exists in selection!
+        group_sel = [{group_by: group_values[idx]} for idx in range(len(group_values))]
 
     return group_sel, group_values

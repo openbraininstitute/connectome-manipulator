@@ -162,22 +162,8 @@ def test_connectivity():
             edges_popul_name=popul_name,
         )
 
-    ## (b) Node set src/tgt selection w/o dict + group-by
+    ## (b) Invalid group-by
     popul_name = "nodeA__nodeA__chemical"
-    with pytest.raises(
-        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
-    ):
-        res = test_module.compute(
-            circuit, sel_src="RegionA", sel_dest=None, edges_popul_name=popul_name, group_by="mtype"
-        )
-    with pytest.raises(
-        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
-    ):
-        res = test_module.compute(
-            circuit, sel_src=None, sel_dest="RegionA", edges_popul_name=popul_name, group_by="mtype"
-        )
-
-    ## (c) Invalid group-by
     with pytest.raises(
         AssertionError,
         match=re.escape("'group_by' must be a tuple with two elements for source/target neurons"),
@@ -207,7 +193,7 @@ def test_connectivity():
         )
 
     # Case 2: Full circuit
-    # (a) W/o group-by
+    ## (a) W/o group-by
     group_by = None
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -219,7 +205,7 @@ def test_connectivity():
         res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
     )
 
-    # (b) W/ group-by
+    ## (b) W/ group-by
     group_by = "layer"
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -231,7 +217,7 @@ def test_connectivity():
         res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
     )
 
-    # (c) W/ group-by (src only)
+    ## (c) W/ group-by (src only)
     group_by = ("layer", None)
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -243,7 +229,7 @@ def test_connectivity():
         res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
     )
 
-    # (d) W/ group-by (tgt only)
+    ## (d) W/ group-by (tgt only)
     group_by = (None, "layer")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
@@ -255,7 +241,7 @@ def test_connectivity():
         res, df_prob, df_nsyn_mean, df_nsyn_std, df_nsyn_sem, df_nsyn_min, df_nsyn_max, group_by
     )
 
-    # (e) W/ group-by (different src/tgt)
+    ## (e) W/ group-by (different src/tgt)
     group_by = ("layer", "mtype")
     res = test_module.compute(
         circuit, sel_src=None, sel_dest=None, edges_popul_name=popul_name, group_by=group_by
