@@ -12,16 +12,20 @@ Comparing two connectomes in terms of connectivity or synaptic properties.
 ## Grouping behavior for connectivity/property matrices:
 
 - No pre-/postsynaptic grouping (`group_by=None`), i.e., returning a single value
+
   <img width="128" alt="No grouping" src=../../doc/source/images/conn_prob__group_by_none.png>
 
 - Separate pre-/postsynaptic groupings by providing a tuple, e.g., `group_by=("mtype", "etype")`
+
   <img width="128" alt="Pre-/postsynaptic grouping" src=../../doc/source/images/conn_prob__group_by_src_tgt.png>
 
 - Omitting grouping, if not existing in either pre- or postsynaptic node population (e.g., in case of virtual populations)
   - e.g., `group_by="layer"` but "layer" only existing in presynaptic population, i.e., turned into `("layer", None)`
+ 
     <img width="128" alt="Source grouping" src=../../doc/source/images/conn_prob__group_by_src.png>
 
   - e.g., `group_by="layer"` but "layer" only existing in postsynaptic population, i.e., turned into `(None, "layer")`
+ 
     <img width="128" alt="Target grouping" src=../../doc/source/images/conn_prob__group_by_tgt.png>
  
   - CAUTION:
