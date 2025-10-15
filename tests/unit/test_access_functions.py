@@ -84,20 +84,20 @@ def test_get_grouping():
     nodes = circuit.nodes["nodeA"]
 
     # Case 1: No node selection
-    # (a) No grouping
+    ## (a) No grouping
     group_by = None
     res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
     np.testing.assert_array_equal(res_sel, [None])
     np.testing.assert_array_equal(res_val, [None])
 
-    # (b) Invalid grouping
+    ## (b) Invalid grouping
     group_by = "invalid"
     with pytest.raises(
         BluepySnapError, match=re.escape(f"Unknown node properties: ['{group_by}']")
     ):
         res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
 
-    # (c) Valid grouping
+    ## (c) Valid grouping
     group_by = "mtype"
     res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
     ref_mtypes = np.unique(nodes.get(properties="mtype"))
@@ -106,30 +106,35 @@ def test_get_grouping():
 
     # Case 2: With node selection as str
     node_sel = "LayerA"
-    # (a) No grouping
+    ## (a) No grouping
     group_by = None
     res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
-    np.testing.assert_array_equal(res_sel, [node_sel])
+    np.testing.assert_array_equal(res_sel, [None])
     np.testing.assert_array_equal(res_val, [None])
 
-    # (b) With grouping --> Not supported
+    ## (b) With grouping (with skip)
     group_by = "layer"
-    with pytest.raises(
-        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
-    ):
-        res_sel, res_val = test_module.get_grouping(
-            nodes, node_sel, group_by, skip_empty_groups=True
-        )
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
+    ref_layers = np.unique(nodes.get(node_sel, properties="layer"))
+    np.testing.assert_array_equal(res_sel, [{"layer": _lay} for _lay in ref_layers])
+    np.testing.assert_array_equal(res_val, ref_layers)
+
+    ## (c) With grouping (w/o skip)
+    group_by = "layer"
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=False)
+    ref_layers = sorted(nodes.property_values("layer"))
+    np.testing.assert_array_equal(res_sel, [{"layer": _lay} for _lay in ref_layers])
+    np.testing.assert_array_equal(res_val, ref_layers)
 
     # Case 3: With node selection as dict
     node_sel = {"layer": "LA"}
-    # (a) No grouping
+    ## (a) No grouping
     group_by = None
     res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
-    np.testing.assert_array_equal(res_sel, node_sel)
+    np.testing.assert_array_equal(res_sel, [None])
     np.testing.assert_array_equal(res_val, [None])
 
-    # (b) Invalid grouping
+    ## (b) Invalid grouping
     group_by = "invalid"
     with pytest.raises(
         BluepySnapError, match=re.escape(f"Unknown node properties: ['{group_by}']")
@@ -138,16 +143,16 @@ def test_get_grouping():
             nodes, node_sel, group_by, skip_empty_groups=True
         )
 
-    # (c) Valid grouping (with skip)
+    ## (c) Valid grouping (with skip)
     group_by = "mtype"
     res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
     ref_mtypes = np.unique(nodes.get(node_sel, properties="mtype"))
-    np.testing.assert_array_equal(res_sel, [node_sel | {"mtype": _mt} for _mt in ref_mtypes])
+    np.testing.assert_array_equal(res_sel, [{"mtype": _mt} for _mt in ref_mtypes])
     np.testing.assert_array_equal(res_val, ref_mtypes)
 
-    # (d) Valid grouping (w/o skip)
+    ## (d) Valid grouping (w/o skip)
     group_by = "mtype"
     res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=False)
     ref_mtypes = sorted(nodes.property_values("mtype"))
-    np.testing.assert_array_equal(res_sel, [node_sel | {"mtype": _mt} for _mt in ref_mtypes])
+    np.testing.assert_array_equal(res_sel, [{"mtype": _mt} for _mt in ref_mtypes])
     np.testing.assert_array_equal(res_val, ref_mtypes)

@@ -96,17 +96,17 @@ def test_check_grouping():
     tgt_nodes_mock.get.return_value = tgt_nodes.get().drop("layer", axis=1)
 
     # Case 1: No node populations provided
-    # (a) No grouping --> OK
+    ## (a) No grouping --> OK
     group_by = None
     res = test_module.check_grouping(group_by, src_nodes=None, tgt_nodes=None)
     assert res == (None, None)
 
-    # (b) No grouping (tuple) --> OK
+    ## (b) No grouping (tuple) --> OK
     group_by = (None, None)
     res = test_module.check_grouping(group_by, src_nodes=None, tgt_nodes=None)
     assert res == (None, None)
 
-    # (c) No grouping (wrong tuple) --> ERROR
+    ## (c) No grouping (wrong tuple) --> ERROR
     group_by = (None, None, None)
     with pytest.raises(
         AssertionError,
@@ -114,28 +114,28 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=None, tgt_nodes=None)
 
-    # (d) Grouping (str) --> OK
+    ## (d) Grouping (str) --> OK
     group_by = "any"
     res = test_module.check_grouping(group_by, src_nodes=None, tgt_nodes=None)
     assert res == ("any", "any")
 
-    # (e) Grouping (tuple) --> OK
+    ## (e) Grouping (tuple) --> OK
     group_by = ("any-A", "any-B")
     res = test_module.check_grouping(group_by, src_nodes=None, tgt_nodes=None)
     assert res == ("any-A", "any-B")
 
     # Case 2: Same source/target node populations provided
-    # (a) No grouping --> OK
+    ## (a) No grouping --> OK
     group_by = None
     res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
     assert res == (None, None)
 
-    # (b) No grouping (tuple) --> OK
+    ## (b) No grouping (tuple) --> OK
     group_by = (None, None)
     res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
     assert res == (None, None)
 
-    # (c) Invalid grouping (str) --> ERROR
+    ## (c) Invalid grouping (str) --> ERROR
     group_by = "invalid"
     with pytest.raises(
         AssertionError,
@@ -145,7 +145,7 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
 
-    # (d) Invalid source grouping (str) --> ERROR
+    ## (d) Invalid source grouping (str) --> ERROR
     group_by = ("invalid", None)
     with pytest.raises(
         AssertionError,
@@ -155,7 +155,7 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
 
-    # (e) Invalid target grouping (str) --> ERROR
+    ## (e) Invalid target grouping (str) --> ERROR
     group_by = (None, "invalid")
     with pytest.raises(
         AssertionError,
@@ -165,18 +165,18 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
 
-    # (f) Valid grouping (str) --> OK
+    ## (f) Valid grouping (str) --> OK
     group_by = "layer"
     res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
     assert res == ("layer", "layer")
 
-    # (g) Valid grouping (tuple) --> OK
+    ## (g) Valid grouping (tuple) --> OK
     group_by = ("layer", "mtype")
     res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes)
     assert res == ("layer", "mtype")
 
     # Case 3: Different source/target node populations provided
-    # (a) Invalid grouping in src/tgt (str) --> ERROR
+    ## (a) Invalid grouping in src/tgt (str) --> ERROR
     group_by = "invalid"
     with pytest.raises(
         AssertionError,
@@ -186,12 +186,12 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes_mock)
 
-    # (b) Valid grouping in src only (str) --> OK (will ignore tgt)
+    ## (b) Valid grouping in src only (str) --> OK (will ignore tgt)
     group_by = "layer"
     res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes_mock)
     assert res == ("layer", None)
 
-    # (c) Valid grouping in src only (tuple) --> ERROR (will not ignore tgt)
+    ## (c) Valid grouping in src only (tuple) --> ERROR (will not ignore tgt)
     group_by = ("layer", "layer")
     with pytest.raises(
         AssertionError,
@@ -201,12 +201,12 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes, tgt_nodes=tgt_nodes_mock)
 
-    # (d) Valid grouping in tgt only (str) --> OK (will ignore src)
+    ## (d) Valid grouping in tgt only (str) --> OK (will ignore src)
     group_by = "layer"
     res = test_module.check_grouping(group_by, src_nodes=src_nodes_mock, tgt_nodes=tgt_nodes)
     assert res == (None, "layer")
 
-    # (e) Valid grouping in tgt only (tuple) --> ERROR (will not ignore src)
+    ## (e) Valid grouping in tgt only (tuple) --> ERROR (will not ignore src)
     group_by = ("layer", "layer")
     with pytest.raises(
         AssertionError,
@@ -216,12 +216,12 @@ def test_check_grouping():
     ):
         res = test_module.check_grouping(group_by, src_nodes=src_nodes_mock, tgt_nodes=tgt_nodes)
 
-    # (f) Valid grouping in src/tgt (str) --> OK
+    ## (f) Valid grouping in src/tgt (str) --> OK
     group_by = "mtype"
     res = test_module.check_grouping(group_by, src_nodes=src_nodes_mock, tgt_nodes=tgt_nodes)
     assert res == ("mtype", "mtype")
 
-    # (g) Valid grouping in src/tgt (tuple) --> OK
+    ## (g) Valid grouping in src/tgt (tuple) --> OK
     group_by = ("mtype", "layer")
     res = test_module.check_grouping(group_by, src_nodes=src_nodes_mock, tgt_nodes=tgt_nodes)
     assert res == ("mtype", "layer")
