@@ -6,8 +6,10 @@
 import os
 
 import numpy as np
+import pytest
+import re
 from numpy.testing import assert_array_equal
-from bluepysnap import Circuit
+from bluepysnap import BluepySnapError, Circuit
 from voxcell import VoxelData
 
 from utils import TEST_DATA_DIR
@@ -75,3 +77,77 @@ def test_get_node_positions():
     res = test_module.get_node_positions(nodes, node_ids, vox_map=vox_map)
     assert_array_equal(ref_pos, res[0])  # raw_pos
     assert_array_equal(vox_map.lookup(ref_pos), res[1])  # pos
+
+
+def test_get_grouping():
+    circuit = Circuit(os.path.join(TEST_DATA_DIR, "circuit_sonata.json"))
+    nodes = circuit.nodes["nodeA"]
+
+    # Case 1: No node selection
+    # (a) No grouping
+    group_by = None
+    res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
+    np.testing.assert_array_equal(res_sel, [None])
+    np.testing.assert_array_equal(res_val, [None])
+
+    # (b) Invalid grouping
+    group_by = "invalid"
+    with pytest.raises(
+        BluepySnapError, match=re.escape(f"Unknown node properties: ['{group_by}']")
+    ):
+        res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
+
+    # (c) Valid grouping
+    group_by = "mtype"
+    res_sel, res_val = test_module.get_grouping(nodes, None, group_by, skip_empty_groups=True)
+    ref_mtypes = np.unique(nodes.get(properties="mtype"))
+    np.testing.assert_array_equal(res_sel, [{"mtype": _mt} for _mt in ref_mtypes])
+    np.testing.assert_array_equal(res_val, ref_mtypes)
+
+    # Case 2: With node selection as str
+    node_sel = "LayerA"
+    # (a) No grouping
+    group_by = None
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
+    np.testing.assert_array_equal(res_sel, [node_sel])
+    np.testing.assert_array_equal(res_val, [None])
+
+    # (b) With grouping --> Not supported
+    group_by = "layer"
+    with pytest.raises(
+        AssertionError, match=re.escape("Source/target node selection must be a dict or empty")
+    ):
+        res_sel, res_val = test_module.get_grouping(
+            nodes, node_sel, group_by, skip_empty_groups=True
+        )
+
+    # Case 3: With node selection as dict
+    node_sel = {"layer": "LA"}
+    # (a) No grouping
+    group_by = None
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
+    np.testing.assert_array_equal(res_sel, node_sel)
+    np.testing.assert_array_equal(res_val, [None])
+
+    # (b) Invalid grouping
+    group_by = "invalid"
+    with pytest.raises(
+        BluepySnapError, match=re.escape(f"Unknown node properties: ['{group_by}']")
+    ):
+        res_sel, res_val = test_module.get_grouping(
+            nodes, node_sel, group_by, skip_empty_groups=True
+        )
+
+    # (c) Valid grouping (with skip)
+    group_by = "mtype"
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=True)
+    ref_mtypes = np.unique(nodes.get(node_sel, properties="mtype"))
+    np.testing.assert_array_equal(res_sel, [node_sel | {"mtype": _mt} for _mt in ref_mtypes])
+    np.testing.assert_array_equal(res_val, ref_mtypes)
+
+    # (d) Valid grouping (w/o skip)
+    group_by = "mtype"
+    res_sel, res_val = test_module.get_grouping(nodes, node_sel, group_by, skip_empty_groups=False)
+    ref_mtypes = sorted(nodes.property_values("mtype"))
+    np.testing.assert_array_equal(res_sel, [node_sel | {"mtype": _mt} for _mt in ref_mtypes])
+    np.testing.assert_array_equal(res_val, ref_mtypes)

@@ -83,8 +83,6 @@ def test_reduce_config_paths():
 def test_check_grouping():
     circuit = Circuit(os.path.join(TEST_DATA_DIR, "circuit_sonata.json"))
     nodes = [circuit.nodes["nodeA"]] * 2  # Src/tgt populations
-    edges = circuit.edges["nodeA__nodeA__chemical"]
-    edges_table = edges.afferent_edges(nodes[1].ids(), properties=edges.property_names)
     src_nodes = nodes[0]
     tgt_nodes = nodes[1]
 

@@ -336,11 +336,11 @@ def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
         group_sel = [node_sel]
         group_values = [None]
     else:
-        if (
-            skip_empty_groups
-        ):  # Take only group property values that exist within given src/tgt selection
+        if skip_empty_groups:
+            # Take only group property values that exist within given src/tgt selection
             group_values = np.unique(nodes.get(get_node_ids(nodes, node_sel), properties=group_by))
-        else:  # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
+        else:
+            # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
             group_values = sorted(nodes.property_values(group_by))
 
         if node_sel is None:
