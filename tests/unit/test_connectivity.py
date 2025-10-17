@@ -142,6 +142,26 @@ def _check_conn(
     )
 
 
+def _check_empty(res, src_ids, tgt_ids, nodes, group_by, skip):
+    nsrc = len(nodes[0].property_values(group_by))
+    ntgt = len(nodes[1].property_values(group_by))
+    if len(src_ids) == 0:  # No src selection
+        if skip:
+            assert res["conn_prob"]["data"].shape[0] == 0
+        else:
+            assert res["conn_prob"]["data"].shape[0] == nsrc
+    else:
+        assert res["conn_prob"]["data"].shape[0] > 0
+
+    if len(tgt_ids) == 0:  # No tgt selection
+        if skip:
+            assert res["conn_prob"]["data"].shape[1] == 0
+        else:
+            assert res["conn_prob"]["data"].shape[1] == ntgt
+    else:
+        assert res["conn_prob"]["data"].shape[1] > 0
+
+
 def test_connectivity():
     circuit = Circuit(os.path.join(TEST_DATA_DIR, "circuit_sonata.json"))
     nodes = [circuit.nodes["nodeA"]] * 2  # Src/tgt populations
@@ -281,3 +301,45 @@ def test_connectivity():
                 df_nsyn_max,
                 group_by,
             )
+
+    # Case 4: Empty source/target node selection (with and w/o skip)
+    group_by = "layer"
+    for skip in [True, False]:
+        ## (a) src sel empty
+        sel_src = {"layer": "UNKNOWN"}
+        sel_tgt = None
+        res = test_module.compute(
+            circuit,
+            sel_src=sel_src,
+            sel_dest=sel_tgt,
+            edges_popul_name=popul_name,
+            group_by=group_by,
+            skip_empty_groups=skip,
+        )
+        _check_empty(res, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by, skip)
+
+        ## (b) tgt sel empty
+        sel_src = None
+        sel_tgt = {"layer": "UNKNOWN"}
+        res = test_module.compute(
+            circuit,
+            sel_src=sel_src,
+            sel_dest=sel_tgt,
+            edges_popul_name=popul_name,
+            group_by=group_by,
+            skip_empty_groups=skip,
+        )
+        _check_empty(res, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by, skip)
+
+        ## (c) src & tgt sel empty
+        sel_src = {"layer": "UNKNOWN"}
+        sel_tgt = {"layer": "UNKNOWN"}
+        res = test_module.compute(
+            circuit,
+            sel_src=sel_src,
+            sel_dest=sel_tgt,
+            edges_popul_name=popul_name,
+            group_by=group_by,
+            skip_empty_groups=skip,
+        )
+        _check_empty(res, nodes[0].ids(sel_src), nodes[1].ids(sel_tgt), nodes, group_by, skip)
