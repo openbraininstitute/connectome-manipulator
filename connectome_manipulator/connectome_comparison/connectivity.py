@@ -128,7 +128,7 @@ def compute(
     tgt_ids_base = get_node_ids(tgt_nodes, sel_dest)
 
     if len(src_ids_base) == 0 or len(tgt_ids_base) == 0:
-        print("WARNING: Empty src/tgt node selection(s)!")
+        print("WARNING: Empty source/target node selection(s)!")
 
     print(
         f"INFO: Computing connectivity (group_by={group_by}, sel_src={sel_src}, sel_dest={sel_dest}, N={len(src_group_values)}x{len(tgt_group_values)} groups, max_distance={max_distance} based on {props_for_distance})",

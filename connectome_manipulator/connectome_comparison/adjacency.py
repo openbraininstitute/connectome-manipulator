@@ -53,7 +53,7 @@ def compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=None, **_):
 
     assert (
         len(src_node_ids) > 0 and len(tgt_node_ids) > 0
-    ), "ERROR: Empty src/tgt node selection(s)!"
+    ), "ERROR: Empty source/target node selection(s)!"
 
     # Map source/target node ids to continuous range of indices for plotting
     src_gid_min = min(src_nodes.ids())
