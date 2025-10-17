@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2024 Blue Brain Project/EPFL
+# Copyright (c) 2025 Open Brain Institute
 
 """Various utility functions"""
 
@@ -156,6 +157,70 @@ def _reduce_dict(entry: dict, base_dir: os.PathLike) -> dict:
         else:
             reduced_dict[key] = _reduce_path(value, base_dir)
     return reduced_dict
+
+
+def _check_node_property(property_name, nodes):
+    if nodes is None or property_name in nodes.property_names:
+        return property_name
+    else:
+        return None
+
+
+def check_grouping(group_by, src_nodes=None, tgt_nodes=None):
+    """Helper function to check grouping for source/target neurons.
+
+    Args:
+        group_by (str/tuple): Neuron property name based on which to group connections, e.g., "synapse_class", "layer", or "mtype"; can be a tuple with two property names for source/target neurons or omitted
+        src_nodes (bluepysnap.nodes.NodePopulation): Source node population (optional)
+        tgt_nodes (bluepysnap.nodes.NodePopulation): Target node population (optional)
+
+    Returns:
+        str: Source grouping property name
+        str: Target grouping property name
+
+    Note:
+        Includes some logic so that if a given property name only exists in either the source or target node
+        population, it will apply grouping only on the population where it exists (instead of raising an error).
+    """
+    if not isinstance(group_by, tuple):
+        if group_by is None:
+            group_by = (group_by, group_by)
+        else:
+            group_by_lbl = str(group_by)
+            # If only one grouping property is provided, propagate only to the populations where it actually exists
+            group_by = (
+                _check_node_property(group_by, src_nodes),
+                _check_node_property(group_by, tgt_nodes),
+            )
+            # But make sure it exists in at least one of the source/target populations
+            assert any(
+                _g is not None for _g in group_by
+            ), f"ERROR: Grouping property '{group_by_lbl}' does not exist in either source or target node population!"
+
+    assert (
+        len(group_by) == 2
+    ), "ERROR: 'group_by' must be a tuple with two elements for source/target neurons!"
+
+    src_group_by = group_by[0]
+    tgt_group_by = group_by[1]
+
+    assert src_group_by is None or isinstance(
+        src_group_by, str
+    ), "ERROR: Source 'group_by' must be a string (or None)!"
+    assert tgt_group_by is None or isinstance(
+        tgt_group_by, str
+    ), "ERROR: Target 'group_by' must be a string (or None)!"
+
+    if src_group_by is not None:
+        assert (
+            _check_node_property(src_group_by, src_nodes) is not None
+        ), f"ERROR: Grouping property '{src_group_by}' does not exist in source node population!"
+    if tgt_group_by is not None:
+        assert (
+            _check_node_property(tgt_group_by, tgt_nodes) is not None
+        ), f"ERROR: Grouping property '{tgt_group_by}' does not exist in target node population!"
+
+    return src_group_by, tgt_group_by
 
 
 class ConsoleColors:

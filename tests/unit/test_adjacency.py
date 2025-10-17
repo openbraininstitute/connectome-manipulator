@@ -65,7 +65,9 @@ def test_compute():
     ## (b) Empty node sets
     popul_name = "nodeA__nodeA__chemical"
     for _src, _tgt in [(None, []), ([], None), ([], [])]:
-        with pytest.raises(AssertionError, match=re.escape("Empty src/tgt node selection(s)")):
+        with pytest.raises(
+            AssertionError, match=re.escape("Empty source/target node selection(s)")
+        ):
             res = test_module.compute(
                 circuit, sel_src=_src, sel_dest=_tgt, edges_popul_name=popul_name
             )

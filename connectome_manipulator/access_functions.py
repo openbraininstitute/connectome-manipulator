@@ -1,4 +1,8 @@
 # This file is part of connectome-manipulator.
+#
+# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2024 Blue Brain Project/EPFL
+# Copyright (c) 2025 Open Brain Institute
 
 """Collection of function for flexible nodes/edges access, to be used by model building and manipulation operations"""
 
@@ -317,3 +321,32 @@ def get_cv_data(data_list, cv_dict=None):
         ##############
 
         return cv_data_list
+
+
+def get_grouping(nodes, node_sel, group_by, skip_empty_groups):
+    """Returns the grouping selection and values of a given node selection.
+
+    Args:
+        nodes (bluepysnap.nodes.NodePopulation): Node population
+        node_sel (str/list-like/dict): Neuron selection
+        group_by (str): Neuron property name based on which to group connections
+        skip_empty_groups (bool): If selected, only group property values that exist within the given source/target selection are kept; otherwise, all group property values, even if not present in the given source/target selection, will be included
+
+    Returns:
+        list: List of grouping selection dicts
+        list: List of grouping values
+    """
+    if group_by is None:
+        group_sel = [None]
+        group_values = [None]
+    else:
+        if skip_empty_groups:
+            # Take only group property values that exist within given src/tgt selection
+            group_values = np.unique(nodes.get(get_node_ids(nodes, node_sel), properties=group_by))
+        else:
+            # Keep all group property values, even if not present in given src/tgt selection, to get the full matrix
+            group_values = sorted(nodes.property_values(group_by))
+
+        group_sel = [{group_by: group_values[idx]} for idx in range(len(group_values))]
+
+    return group_sel, group_values

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # Copyright (c) 2024 Blue Brain Project/EPFL
+# Copyright (c) 2025 Open Brain Institute
 
 """Module for comparing connectomes based on adjacency matrices:
 
@@ -52,7 +53,7 @@ def compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=None, **_):
 
     assert (
         len(src_node_ids) > 0 and len(tgt_node_ids) > 0
-    ), "ERROR: Empty src/tgt node selection(s)!"
+    ), "ERROR: Empty source/target node selection(s)!"
 
     # Map source/target node ids to continuous range of indices for plotting
     src_gid_min = min(src_nodes.ids())
@@ -89,7 +90,7 @@ def compute(circuit, sel_src=None, sel_dest=None, edges_popul_name=None, **_):
             dtype=int,
         )
 
-    adj_matrix = count_matrix > 0
+    adj_matrix = csc_matrix(count_matrix > 0)
 
     return {
         "adj": {"data": adj_matrix, "name": "Adjacency", "unit": None},

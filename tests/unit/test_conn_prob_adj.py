@@ -26,7 +26,7 @@ def test_extract():
     edges = circuit.edges["nodeA__nodeA__chemical"]
 
     # Case 1: Empty node selection
-    with pytest.raises(AssertionError, match=re.escape("Empty src/tgt node selection(s)")):
+    with pytest.raises(AssertionError, match=re.escape("Empty source/target node selection(s)")):
         test_module.extract(circuit, sel_src=[], sel_dest=[])
 
     # Case 2: Non-empty nodes selection
