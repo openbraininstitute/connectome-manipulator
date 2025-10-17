@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Version 1.0.4
+-------------
+
+- Improvements for group_by selection:
+
+  - Fixed the special cases when group_by=None is selected for extracting connectivity or synaptic properties
+  - Added option to specify group_by separately for source/target node populations as a tuple
+  - Improved logic when the group_by property does not exist in either the source or target node population
+  - Moved common functions into access_functions.py and utils.py for better reusability
+  - Added unit tests for connectivity and properties extraction
+  - Small fixes to take changes in new scipy and pyarrow versions into account
+
+
 Version 1.0.3
 -------------
 
