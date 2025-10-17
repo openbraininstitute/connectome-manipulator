@@ -145,21 +145,30 @@ def _check_conn(
 def _check_empty(res, src_ids, tgt_ids, nodes, group_by, skip):
     nsrc = len(nodes[0].property_values(group_by))
     ntgt = len(nodes[1].property_values(group_by))
-    if len(src_ids) == 0:  # No src selection
-        if skip:
-            assert res["conn_prob"]["data"].shape[0] == 0
+    res_keys = [
+        "nsyn_conn",
+        "nsyn_conn_std",
+        "nsyn_conn_sem",
+        "nsyn_conn_min",
+        "nsyn_conn_max",
+        "conn_prob",
+    ]
+    for key in res_keys:
+        if len(src_ids) == 0:  # No src selection
+            if skip:
+                assert res[key]["data"].shape[0] == 0
+            else:
+                assert res[key]["data"].shape[0] == nsrc
         else:
-            assert res["conn_prob"]["data"].shape[0] == nsrc
-    else:
-        assert res["conn_prob"]["data"].shape[0] > 0
+            assert res[key]["data"].shape[0] > 0
 
-    if len(tgt_ids) == 0:  # No tgt selection
-        if skip:
-            assert res["conn_prob"]["data"].shape[1] == 0
+        if len(tgt_ids) == 0:  # No tgt selection
+            if skip:
+                assert res[key]["data"].shape[1] == 0
+            else:
+                assert res[key]["data"].shape[1] == ntgt
         else:
-            assert res["conn_prob"]["data"].shape[1] == ntgt
-    else:
-        assert res["conn_prob"]["data"].shape[1] > 0
+            assert res[key]["data"].shape[1] > 0
 
 
 def test_connectivity():
